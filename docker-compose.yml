@@ -1,0 +1,25 @@
+services:
+  django:
+    build: .
+    container_name: django_app
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             daphne -b 0.0.0.0 -p 8000 mysite.asgi:application"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+
+  redis:
+    image: redis:7
+    container_name: redis_server
+    ports:
+      - "6379:6379"

@@ -1,0 +1,61 @@
+# ============================
+# Django + Python
+# ============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.sqlite3
+
+# Local settings
+local_settings.py
+
+# ============================
+# Environment & Secrets
+# ============================
+.env
+.env.*
+*.env
+
+# ============================
+# Static & Media
+# ============================
+staticfiles/
+static/
+media/
+
+# ============================
+# Logs
+# ============================
+*.log
+*.pid
+
+# ============================
+# Virtual Environments
+# ============================
+venv/
+env/
+ENV/
+.venv/
+
+# ============================
+# IDE / Editor
+# ============================
+.vscode/
+.idea/
+*.swp
+
+# ============================
+# OS Junk
+# ============================
+.DS_Store
+Thumbs.db
+
+# ============================
+# Docker
+# ============================
+# Ignore Docker volumes and build artifacts
+docker-data/
+docker-volumes/
