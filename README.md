@@ -9,7 +9,7 @@ This project uses Django, Channels, Daphne, Redis, and Docker to provide a robus
 
 - WebSocket support via Daphne ASGI server
 
-- Redis channel layer backend
+- Redis channel layer backend ready to be enabled upon deployment to cloud/Linux server
 
 - Dockerised development environment
 
