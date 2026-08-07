@@ -56,9 +56,7 @@ project-root/
 │
 ├── static/                      # Global static assets (JS, CSS)
 │   └── core/
-│       ├── main.js
 │       ├── game.js
-│       └── styles.css
 │
 ├── docker-compose.yml
 ├── Dockerfile
