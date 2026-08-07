@@ -20,6 +20,10 @@ This project uses Django, Channels, Daphne, Redis, and Docker to provide a robus
 - Automatic static file collection
 
 - Hot‑reload development workflow
+  
+- Dedicated accounts app with automatic UserProfile creation
+
+- Clean separation between Django HTTP views and Channels WebSocket consumers
 
 # Stack Overview
 
@@ -37,71 +41,74 @@ Python 3:	Application runtime
 
 
 # Project Structure
-
+```
 project-root/
-
 │
-
-├── app/                     # Django project
-
-│   ├── mysite/                 # Django settings, ASGI, URLs
-
-│   ├── core/                # Main app (views, routing, consumers)
-
+├── app/                         # Django project root
+│   ├── mysite/                  # Django settings, ASGI, URLs
+│   ├── accounts/                # Django app (models, signals, migrations)
+│   ├── core/                    # Channels routing + consumers (not a Django app)
 │   ├── manage.py
-
 │
-
+├── templates/                   # Global HTML templates
+│   └── core/
+│       └── index.html
+│
+├── static/                      # Global static assets (JS, CSS)
+│   └── core/
+│       ├── main.js
+│       ├── game.js
+│       └── styles.css
+│
 ├── docker-compose.yml
-
 ├── Dockerfile
-
 ├── requirements.txt
-
-├── .env                     # Environment variables (ignored by Git)
-
+├── .env                         # Environment variables (ignored by Git)
 ├── .gitignore
-
 └── README.md
+```
+## Notes on Architecture
+- accounts is a full Django app containing models, migrations, signals, and user logic.
+
+- core is not a Django app; it contains Channels routing and WebSocket consumers only.
+
+- Templates and static files are stored in global directories (templates/ and static/).
+
+- This separation keeps HTTP and WebSocket layers clean and maintainable.
 
 # Environment Variables
 
 Create a .env file in the project root:
-
+```
 DJANGO_SECRET_KEY=your-secret-key
-
 DJANGO_DEBUG=True
-
 DJANGO_ALLOWED_HOSTS=*
-
 REDIS_HOST=redis
-
 REDIS_PORT=6379
-
+```
 The .env file is excluded from version control via .gitignore.
 
 # Running the Project with Docker
 
 ## Build and start all services
-
+```
 docker compose up --build
-
+```
 ## Stop all services
-
+```
 docker compose down
-
+```
 ## Run Django management commands inside the container
-
+```
 docker compose exec web python manage.py migrate
-
 docker compose exec web python manage.py createsuperuser
-
+```
 # Realtime Architecture
 
 Django Channels communicates through Redis using the following flow:
-
+```
 WebSocket Client → Daphne → Channels → Redis → Consumers
-
+```
 This architecture supports:
 
 - Multiplayer game state updates
@@ -123,13 +130,13 @@ Django reloads automatically inside Docker.
 ## Add new dependencies
 
 Update requirements.txt and rebuild:
-
+```
 docker compose up --build
-
+```
 ## Run tests
-
+```
 docker compose exec web pytest
-
+```
 # Deployment Notes
 
 This project can be deployed to:
