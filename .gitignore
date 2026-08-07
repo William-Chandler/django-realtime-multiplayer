@@ -23,7 +23,6 @@ local_settings.py
 # Static & Media
 # ============================
 staticfiles/
-static/
 media/
 
 # ============================
