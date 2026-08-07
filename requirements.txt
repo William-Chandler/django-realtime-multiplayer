@@ -3,3 +3,4 @@ daphne==4.0.0
 channels==4.0.0
 channels_redis
 python-dotenv
+psycopg2-binary

@@ -17,6 +17,18 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: william
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7.0
@@ -26,3 +38,6 @@ services:
     container_name: redis_server
     ports:
       - "6379:6379"
+
+volumes:
+  postgres_data:
