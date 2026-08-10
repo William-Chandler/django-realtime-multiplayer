@@ -66,11 +66,21 @@ project-root/
 └── README.md
 ```
 ## Notes on Architecture
-- accounts is a full Django app containing models, migrations, signals, and user logic.
+- ```accounts``` is a full Django app containing models, migrations, signals, user logic, and templates.
 
-- core is not a Django app; it contains Channels routing and WebSocket consumers only.
+- ```UserProfile``` stores per‑user preferences (currently colour).
 
-- Templates and static files are stored in global directories (templates/ and static/).
+- ```core``` is not a Django app; it contains Channels routing and WebSocket consumers only.
+
+- Redis stores:
+
+	- latest player positions (```HSET position```)
+
+	- realtime movement events (```XADD game-stream```)
+
+- Templates and static files are stored in global directories (```templates/``` and ```static/```).
+
+- The game client (```game.js```) receives colour information from the server and renders each player accordingly.
 
 - This separation keeps HTTP and WebSocket layers clean and maintainable.
 
@@ -84,6 +94,8 @@ DJANGO_ALLOWED_HOSTS=*
 REDIS_HOST=redis
 REDIS_PORT=6379
 ```
+Also include Postgres data (db name, user, password, host, port).
+
 The .env file is excluded from version control via .gitignore.
 
 # Running the Project with Docker
