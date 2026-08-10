@@ -22,9 +22,9 @@ services:
     container_name: postgres_db
     restart: always
     environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: william
-      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

@@ -9,8 +9,22 @@
 		</style>
 	</head>
 	<body>
+		<p style="text-align: right;">
+			{% if user.is_authenticated %}
+				Logged in as: <strong>{{ user.username }}</strong> &emsp;
+				<a href="{% url 'preferences' %}">Preferences</a> &emsp;
+				<a href="{% url 'logout' %}">Log Out</a> &emsp;
+			{% else %}
+				You are not logged in. &emsp;
+				<a href="{% url 'login' %}">Log In</a> &emsp;
+				<a href="{% url 'signup' %}">Sign Up</a> &emsp;
+			{% endif %}
+		</p>
+		
 		{% load static %}
 		<canvas id="game"></canvas>
+		<script>const USER_COLOUR = "{{ user.userprofile.colour_preference }}";</script>
 		<script src="{% static 'core/game.js' %}"></script>
+		
 	</body>
 </html>

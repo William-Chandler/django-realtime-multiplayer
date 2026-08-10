@@ -1,0 +1,21 @@
+<h2>User Preferences</h2>
+
+<p>Logged in as <strong>{{ user.username }}</strong></p>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <label for="colour_preference">Colour Preference:</label>
+
+    <select id="colour_preference" name="colour_preference">
+        {% for value, label in colour_choices %}
+            <option value="{{ value }}" {% if profile.colour_preference == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{% url 'home' %}">Back to Home</a>

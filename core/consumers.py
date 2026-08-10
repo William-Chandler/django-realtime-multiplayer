@@ -18,7 +18,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             if not pos or "," not in pos:
                 continue
 
-            x, y = pos.split(",")
+            parts = pos.split(",")
+
+            if len(parts) == 3:
+                x, y, colour = parts
+            else:
+                # fallback for old entries
+                x, y = parts
+                colour = "red"
 
             try:
                 int_x = int(x)
@@ -30,6 +37,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 "id": player_id,
                 "x": int_x,
                 "y": int_y,
+                "colour": colour,
             }))
 
         # Start background reader
@@ -55,18 +63,26 @@ class GameConsumer(AsyncWebsocketConsumer):
         if data["x"] is None or data["y"] is None:
             return
 
+        # Store position + colour in Redis (optional but useful)
         await redis_client.hset(
             "positions",
             self.id,
-            f"{data['x']},{data['y']}"
+            f"{data['x']},{data['y']},{data.get('colour', 'red')}"
         )
 
+        # Broadcast movement + colour
         await redis_client.xadd(
             self.stream,
-            {"id": self.id, "x": data["x"], "y": data["y"]},
+            {
+                "id": self.id,
+                "x": data["x"],
+                "y": data["y"],
+                "colour": data.get("colour", "red")
+            },
             maxlen=1000,
             approximate=True
         )
+
 
     async def stream_reader(self):
         last_id = "$"
@@ -94,4 +110,5 @@ class GameConsumer(AsyncWebsocketConsumer):
                         "id": fields["id"],
                         "x": fields["x"],
                         "y": fields["y"],
+                        "colour": fields.get("colour", "red"),
                     }))

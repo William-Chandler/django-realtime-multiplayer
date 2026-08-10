@@ -1,0 +1,12 @@
+<h2>You are already logged in</h2>
+
+<p>You are currently logged in as <strong>{{ user.username }}</strong>.</p>
+
+<p>To log in to another account or create a new account, please log out first.</p>
+
+<form method="POST" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">Log Out</button>
+</form>
+<br>
+<a href="{% url 'home' %}">Home</a>
