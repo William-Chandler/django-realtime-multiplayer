@@ -1,3 +1,14 @@
+// =====================
+// Load user config from JSON script tag
+// =====================
+const config = JSON.parse(
+    document.getElementById("user-config").textContent
+);
+const USER_COLOUR = config.colour;
+
+// =====================
+// Canvas setup
+// =====================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -8,7 +19,15 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// =====================
+// WebSocket
+// =====================
 const socket = new WebSocket(`ws://${window.location.host}/ws/game/`);
+
+// Force Chrome to close the WebSocket before navigating away
+window.addEventListener("pagehide", () => {
+    socket.close();
+});
 
 let players = {};
 
@@ -24,23 +43,29 @@ socket.onmessage = function(e) {
         players[data.id] = {
             x: data.x,
             y: data.y,
-            colour: data.colour || "red"   // fallback
+            colour: data.colour || "red"
         };
     }
 };
 
+// =====================
+// Mouse movement
+// =====================
 document.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    socket.send(JSON.stringify({ 
-		x, 
-		y, 
-		colour: USER_COLOUR 
-	}));
+    socket.send(JSON.stringify({
+        x,
+        y,
+        colour: USER_COLOUR
+    }));
 });
 
+// =====================
+// Drawing loop
+// =====================
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -48,12 +73,11 @@ function draw() {
         const p = players[id];
         ctx.beginPath();
         ctx.arc(p.x, p.y, 10, 0, 2 * Math.PI);
-        ctx.fillStyle = p.colour;   // ← use their colour
+        ctx.fillStyle = p.colour;
         ctx.fill();
     }
 
     requestAnimationFrame(draw);
 }
-
 
 draw();
