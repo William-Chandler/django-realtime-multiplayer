@@ -5,7 +5,7 @@
 <form method="POST">
     {% csrf_token %}
 
-    <label for="colour_preference">Colour Preference:</label>
+    <label for="colour_preference">Default Colour Preference:</label>
 
     <select id="colour_preference" name="colour_preference">
         {% for value, label in colour_choices %}
