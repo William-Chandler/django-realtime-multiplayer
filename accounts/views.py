@@ -63,7 +63,8 @@ def preferences_view(request):
         colour = request.POST.get("colour_preference")
         profile.colour_preference = colour
         profile.save()
-        return redirect("home")
+        next_url = request.POST.get("next", "/")
+        return redirect(next_url)
 
     return render(request, "accounts/preferences.html", {
         "profile": profile,

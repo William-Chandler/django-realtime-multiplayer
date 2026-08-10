@@ -13,17 +13,18 @@ async def safe_redis(coro, fallback=None):
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
+        self.stream = f"game:room:{self.room_id}"
         self.id = str(uuid.uuid4())
-        self.stream = "game:room:main"
 
         await self.accept()
         
         # Send full stroke history
-        raw_strokes = await safe_redis(redis_client.lrange("strokes", 0, -1), [])
+        raw_strokes = await safe_redis(redis_client.lrange(f"strokes:{self.room_id}", 0, -1), [])
         strokes = [json.loads(s) for s in raw_strokes]
 
         # Send snapshot of existing players
-        positions = await safe_redis(redis_client.hgetall("positions"), {})
+        positions = await safe_redis(redis_client.hgetall(f"positions:{self.room_id}"), {})
         
         await self.send(text_data=json.dumps({
             "strokes": strokes
@@ -59,7 +60,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.reader_task = asyncio.create_task(self.stream_reader())
 
     async def disconnect(self, close_code):
-        await safe_redis(redis_client.hdel("positions", self.id))
+        await safe_redis(redis_client.hdel(f"positions:{self.room_id}", self.id))
 
         await safe_redis(redis_client.xadd(
             self.stream,
@@ -80,7 +81,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             stroke = data["stroke"]
 
             # Store persistent stroke
-            await safe_redis(redis_client.rpush("strokes", json.dumps(stroke)))
+            await safe_redis(redis_client.rpush(
+                f"strokes:{self.room_id}",
+                json.dumps(stroke)
+            ))
 
             # Broadcast stroke to all clients
             await safe_redis(redis_client.xadd(
@@ -102,9 +106,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         await safe_redis(redis_client.hset(
-            "positions",
+            f"positions:{self.room_id}",
             self.id,
-            f"{data['x']},{data['y']},{data.get('colour', 'red')}"
+            f"{data['x']},{data['y']},{data.get('colour','red')}"
         ))
 
         await safe_redis(redis_client.xadd(
@@ -161,3 +165,4 @@ class GameConsumer(AsyncWebsocketConsumer):
                         "y": fields["y"],
                         "colour": fields.get("colour", "red"),
                     }))
+

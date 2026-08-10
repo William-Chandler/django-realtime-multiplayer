@@ -23,7 +23,11 @@ resizeCanvas();
 // =====================
 // WebSocket
 // =====================
-const socket = new WebSocket(`ws://${window.location.host}/ws/game/`);
+const socket = new WebSocket(`ws://${window.location.host}/ws/game/${room_id}/`);
+
+// Debugging
+console.log("Server says room is:", window.SERVER_ROOM_ID);
+console.log("Client thinks room is:", room_id);
 
 window.addEventListener("pagehide", () => socket.close());
 
@@ -115,6 +119,11 @@ canvas.addEventListener("mouseup", () => {
     drawing = false;
     lastX = null;
     lastY = null;
+});
+
+// Close the WebSocket on unload
+window.addEventListener("beforeunload", () => {
+    try { socket.close(); } catch (e) {}
 });
 
 // =====================

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiplayer Demo</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { background: #111; display: block; }
+    </style>
+</head>
+<body>
+	<!-- Debug banner --!>
+	<div style="background:#222; color:#fff; padding:8px; margin-bottom:10px;">
+		<span>Active Room: </span>
+		<strong>{{ room.room_id }}</strong>
+	</div>
+	
+	<!-- For debugging --!>
+	<script>
+		window.SERVER_ROOM_ID = "{{ room.room_id }}";
+	</script>
+	
+	{% include "core/header.html" with next_url=request.path %}
+
+	<div id="canvas-container">
+		{% load static %}
+
+		<canvas id="game"></canvas>
+
+		<script id="user-config" type="application/json">
+		{
+			"colour": "{{ user.userprofile.colour_preference }}"
+		}
+		</script>
+
+		<script>
+			const room_id = "{{ room.room_id }}";
+		</script>
+
+		<script src="{% static 'core/game.js' %}"></script>
+	</div>
+</body>
+</html>

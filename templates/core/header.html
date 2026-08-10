@@ -1,0 +1,11 @@
+<p style="text-align: right;">
+    Logged in as: <strong>{{ user.username }}</strong> &emsp;
+
+
+    <a href="{% url 'create_room' %}">Create Room</a> &emsp;
+    <a href="{% url 'join_room' %}">Join Room</a> &emsp;
+
+    <a href="{% url 'preferences' %}?next={{ next_url }}">Preferences</a> &emsp;
+
+    <a href="{% url 'logout' %}">Log Out</a> &emsp;
+</p>

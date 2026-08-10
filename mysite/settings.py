@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
+    'rooms.apps.RoomsConfig',
 ]
 
 ASGI_APPLICATION = "mysite.asgi.application"
