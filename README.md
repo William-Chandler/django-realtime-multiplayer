@@ -46,7 +46,7 @@ project-root/
 │
 ├── app/                         # Django project root
 │   ├── mysite/                  # Django settings, ASGI, URLs
-│   ├── accounts/                # Django app (models, signals, migrations)
+│   ├── accounts/                # Django app (models, signals, migrations, templates)
 │   ├── core/                    # Channels routing + consumers (not a Django app)
 │   ├── manage.py
 │
