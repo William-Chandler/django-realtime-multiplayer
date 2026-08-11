@@ -72,7 +72,7 @@ project-root/
 ## Notes on Architecture
 - ```accounts``` is a full Django app containing models, migrations, signals, user logic, and templates.
 
-- Likewise, ```rooms``` is a full Django app wi
+- Likewise, ```rooms``` is a full Django app with its own models, migrations, etc.
 
 - ```UserProfile``` stores per‑user preferences (currently colour).
 
