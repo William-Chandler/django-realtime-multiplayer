@@ -84,7 +84,7 @@ project-root/
 
 	- realtime movement events (```XADD game-stream```)
 	
-	- Note: all Redis function calls are wrapped to stop them from crashing the system in dev. Should operate as is in production by activating Redis in setting.py.
+	- Note: all Redis function calls are wrapped to stop them from crashing the system in dev. Should operate as is in production by activating Redis in settings.py.
 
 - Templates and static files are stored in global directories (```templates/``` and ```static/```).
 
