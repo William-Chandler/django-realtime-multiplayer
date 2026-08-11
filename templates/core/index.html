@@ -24,7 +24,7 @@
 
 	<script id="user-config" type="application/json">
 	{
-		"colour": "{% if user.is_authenticated %}{{ user.userprofile.colour_preference }}{% else %}red{% endif %}"
+		"colour": "{% if user.is_authenticated %}{{ user.userprofile.colour_preference }}{% else %}{{ DEFAULT_COLOUR }}{% endif %}"
 	}
 	</script>
 

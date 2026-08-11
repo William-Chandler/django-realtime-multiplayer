@@ -10,6 +10,7 @@ class UserProfile(models.Model):
         ("purple", "Purple"),
         ("orange", "Orange"),
         ("pink", "Pink"),
+        ("white", "White"),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)

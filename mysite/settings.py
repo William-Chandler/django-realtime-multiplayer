@@ -153,3 +153,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = "/static"
+
+# Default brush colour
+DEFAULT_COLOUR = "white"

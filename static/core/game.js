@@ -1,11 +1,11 @@
 // =====================
-// Load user config from JSON script tag
+// Load user config
 // =====================
-const config = JSON.parse(
-    document.getElementById("user-config").textContent
-);
-const USER_COLOUR = config.colour;
+const config = JSON.parse(document.getElementById("user-config").textContent);
+const DEFAULT_COLOUR = "white";
+const COLOUR = config.colour || DEFAULT_COLOUR;   // unified colour
 const USER_DIAMETER = config.diameter || 10;
+
 
 // =====================
 // Canvas setup
@@ -25,41 +25,47 @@ resizeCanvas();
 // =====================
 const socket = new WebSocket(`ws://${window.location.host}/ws/game/${room_id}/`);
 
-// Debugging
-console.log("Server says room is:", window.SERVER_ROOM_ID);
-console.log("Client thinks room is:", room_id);
+socket.onopen = () => {
+    // Register player immediately
+    socket.send(JSON.stringify({ x: 0, y: 0, colour: COLOUR }));
+};
 
 window.addEventListener("pagehide", () => socket.close());
 
 let players = {};
-let strokes = [];   // persistent drawing history
+let strokes = [];
 
-socket.onmessage = function(e) {
+// =====================
+// Incoming messages
+// =====================
+socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
 
-    // Player disconnect
+    // Disconnect
     if (data.disconnect) {
         delete players[data.id];
         return;
     }
 
-    // Player movement
-    if (data.x !== undefined && data.y !== undefined) {
+    // Stroke (drawing or click-dot)
+    if (data.stroke) {
+        strokes.push(data.stroke);
+        return;
+    }
+
+    // Full stroke history
+    if (data.strokes) {
+        strokes = data.strokes;
+        return;
+    }
+
+    // Movement
+    if (data.id && data.x !== undefined && data.y !== undefined) {
         players[data.id] = {
             x: data.x,
             y: data.y,
-            colour: data.colour || "red"
+            colour: data.colour || COLOUR   // unified colour fallback
         };
-    }
-
-    // Single stroke segment
-    if (data.stroke) {
-        strokes.push(data.stroke);
-    }
-
-    // Full stroke history on connect
-    if (data.strokes) {
-        strokes = data.strokes;
     }
 };
 
@@ -70,46 +76,30 @@ let drawing = false;
 let lastX = null;
 let lastY = null;
 
-// =====================
-// Mouse movement
-// =====================
-document.addEventListener("mousemove", (e) => {
+// Helper: canvas-relative coords
+function getCanvasCoords(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
 
-    // Always send cursor position
+// =====================
+// Click → dot stroke
+// =====================
+canvas.addEventListener("mousedown", (e) => {
+    const { x, y } = getCanvasCoords(e);
+
+    // Send dot stroke
     socket.send(JSON.stringify({
+        draw: true,
         x,
         y,
-        colour: USER_COLOUR
+        colour: COLOUR,
+        diameter: USER_DIAMETER
     }));
 
-    // Drawing mode
-    if (drawing) {
-        if (lastX !== null && lastY !== null) {
-            const stroke = {
-                x1: lastX,
-                y1: lastY,
-                x2: x,
-                y2: y,
-                colour: USER_COLOUR,
-                diameter: USER_DIAMETER
-            };
-
-            // Send to server
-            socket.send(JSON.stringify({ stroke }));
-
-            // Add locally for instant feedback
-            strokes.push(stroke);
-        }
-
-        lastX = x;
-        lastY = y;
-    }
-});
-
-canvas.addEventListener("mousedown", () => {
     drawing = true;
     lastX = null;
     lastY = null;
@@ -121,9 +111,41 @@ canvas.addEventListener("mouseup", () => {
     lastY = null;
 });
 
-// Close the WebSocket on unload
-window.addEventListener("beforeunload", () => {
-    try { socket.close(); } catch (e) {}
+// =====================
+// Movement + drawing
+// =====================
+document.addEventListener("mousemove", (e) => {
+    const { x, y } = getCanvasCoords(e);
+
+    // Always send movement
+    socket.send(JSON.stringify({
+        x,
+        y,
+        colour: COLOUR
+    }));
+
+    // Drawing mode
+    if (drawing) {
+        if (lastX !== null && lastY !== null) {
+            const stroke = {
+                x1: lastX,
+                y1: lastY,
+                x2: x,
+                y2: y,
+                colour: COLOUR,
+                diameter: USER_DIAMETER
+            };
+
+            // Instant local feedback
+            strokes.push(stroke);
+
+            // Send to server
+            socket.send(JSON.stringify({ stroke }));
+        }
+
+        lastX = x;
+        lastY = y;
+    }
 });
 
 // =====================
@@ -132,7 +154,7 @@ window.addEventListener("beforeunload", () => {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw persistent strokes
+    // Draw strokes
     for (const s of strokes) {
         ctx.strokeStyle = s.colour;
         ctx.lineWidth = s.diameter;
