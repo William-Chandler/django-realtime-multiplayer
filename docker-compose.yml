@@ -2,9 +2,7 @@ services:
   django:
     build: .
     container_name: django_app
-    command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             daphne -b 0.0.0.0 -p 8000 mysite.asgi:application"
+    command: ["/app/entrypoint.sh"]
     ports:
       - "8000:8000"
     volumes:

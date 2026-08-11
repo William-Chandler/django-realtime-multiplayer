@@ -1,4 +1,5 @@
-<p>{% include "core/header.html" with room_id=request.GET.room %}</p>
+<p>{% include "core/header.html" with next_url=request.get_full_path %}</p>
+<h2>Create a room</h2>
 <form method="POST">
     {% csrf_token %}
     <label>Room Name:</label>

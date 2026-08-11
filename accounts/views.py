@@ -60,10 +60,13 @@ def preferences_view(request):
     profile = request.user.userprofile
 
     if request.method == "POST":
-        colour = request.POST.get("colour_preference")
-        profile.colour_preference = colour
+        profile.colour_preference = request.POST.get("colour_preference")
         profile.save()
-        next_url = request.POST.get("next", "/")
+
+        next_url = request.POST.get("next")
+        if not next_url:
+            next_url = "/"  # fallback
+
         return redirect(next_url)
 
     return render(request, "accounts/preferences.html", {
