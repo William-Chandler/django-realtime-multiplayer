@@ -5,7 +5,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from mysite.redis import redis_client
 from django.conf import settings
 
-DEFAULT_COLOUR = settings.DEFAULT_COLOUR
+def get_default_colour():
+    return settings.DEFAULT_COLOUR
+
 
 async def safe_redis(coro, fallback=None):
     try:
@@ -93,7 +95,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     "y1": data["y"],
                     "x2": data["x"],
                     "y2": data["y"],
-                    "colour": data.get("colour", DEFAULT_COLOUR),
+                    "colour": data.get("colour", get_default_colour()),
                     "diameter": data.get("diameter", 10)
                 }
 
@@ -119,7 +121,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await safe_redis(redis_client.hset(
                 f"positions:{self.room_id}",
                 self.id,
-                f"{data['x']},{data['y']},{data.get('colour',DEFAULT_COLOUR)}"
+                f"{data['x']},{data['y']},{data.get('colour',get_default_colour())}"
             ))
 
             await safe_redis(redis_client.xadd(
@@ -128,7 +130,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     "id": self.id,
                     "x": data["x"],
                     "y": data["y"],
-                    "colour": data.get("colour", DEFAULT_COLOUR)
+                    "colour": data.get("colour", get_default_colour())
                 },
                 maxlen=1000,
                 approximate=True
@@ -176,5 +178,5 @@ class GameConsumer(AsyncWebsocketConsumer):
                     "id": fields["id"],
                     "x": fields["x"],
                     "y": fields["y"],
-                    "colour": fields.get("colour", DEFAULT_COLOUR)
+                    "colour": fields.get("colour", get_default_colour())
                 }))
