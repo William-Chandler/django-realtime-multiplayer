@@ -47,6 +47,7 @@ project-root/
 ├── app/                         # Django project root
 │   ├── mysite/                  # Django settings, ASGI, URLs
 │   ├── accounts/                # Django app (models, signals, migrations, templates)
+│   ├── rooms/               	  # Django app (models, signals, migrations, templates)
 │   ├── core/                    # Channels routing + consumers (not a Django app)
 │   ├── manage.py
 │
@@ -59,8 +60,11 @@ project-root/
 │       ├── game.js
 │
 ├── docker-compose.yml
+├── docker-compose.prod.yml
 ├── Dockerfile
+├── redis.conf
 ├── requirements.txt
+├── entrypoint.sh				  # Configures development or production server depending on .env variable   
 ├── .env                         # Environment variables (ignored by Git)
 ├── .gitignore
 └── README.md
