@@ -72,6 +72,8 @@ project-root/
 ## Notes on Architecture
 - ```accounts``` is a full Django app containing models, migrations, signals, user logic, and templates.
 
+- Likewise, ```rooms``` is a full Django app wi
+
 - ```UserProfile``` stores per‑user preferences (currently colour).
 
 - ```core``` is not a Django app; it contains Channels routing and WebSocket consumers only.
@@ -81,6 +83,8 @@ project-root/
 	- latest player positions (```HSET position```)
 
 	- realtime movement events (```XADD game-stream```)
+	
+	- Note: all Redis function calls are wrapped to stop them from crashing the system in dev. Should operate as is in production by activating Redis in setting.py.
 
 - Templates and static files are stored in global directories (```templates/``` and ```static/```).
 
@@ -93,13 +97,13 @@ project-root/
 Create a .env file in the project root:
 ```
 DJANGO_SECRET_KEY=your-secret-key
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=*
-REDIS_HOST=redis
-REDIS_PORT=6379
+POSTGRES_DB=your-db
+POSTGRES_USER=your-user
+POSTGRES_PASSWORD=your-postgres-password
+POSTGRES_HOST=postgres_db
+POSTGRES_PORT=5432
+DJANGO_ENV=development
 ```
-Also include Postgres data (db name, user, password, host, port).
-
 The .env file is excluded from version control via .gitignore.
 
 # Running the Project with Docker
@@ -114,8 +118,8 @@ docker compose down
 ```
 ## Run Django management commands inside the container
 ```
+docker compose exec web python manage.py makemigrations
 docker compose exec web python manage.py migrate
-docker compose exec web python manage.py createsuperuser
 ```
 # Realtime Architecture
 
@@ -139,7 +143,7 @@ This architecture supports:
 
 ## Code changes
 
-Django reloads automatically inside Docker.
+Django reloads automatically inside Docker when in development environment. Production requires full rebuild to apply changes to code. 
 
 ## Add new dependencies
 
@@ -169,7 +173,9 @@ This project can be deployed to:
 
 For production:
 
-- Set DJANGO_DEBUG=False
+- Set DJANGO_ENV=production in .env
+
+- Set DJANGO_DEBUG=False in settings.py
 
 - Configure DJANGO_ALLOWED_HOSTS
 
