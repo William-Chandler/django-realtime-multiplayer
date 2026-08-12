@@ -3,8 +3,10 @@ import uuid
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
+from channels.db import database_sync_to_async
 from mysite.redis import redis_client
 from django.conf import settings
+
 
 # ============================================================
 # Per-room reader registry (per-process)
@@ -16,6 +18,9 @@ ROOM_CONNECTIONS = {}  # room_id → count of active connections
 
 def get_default_colour():
     return settings.DEFAULT_COLOUR
+
+def get_default_diameter():
+    return getattr(settings, "DEFAULT_DIAMETER", 10)
 
 
 async def safe_redis(coro, fallback=None):
@@ -77,9 +82,25 @@ async def room_stream_reader(room_id):
 class GameConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
+
         self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.id = str(uuid.uuid4())
         self.stream = f"game:room:{self.room_id}"
+
+        # SERVER-SIDE identity (never trust browser)
+        user = self.scope["user"]
+
+        # Fetch profile safely in async context
+        profile = await database_sync_to_async(lambda: getattr(user, "userprofile", None))()
+
+        if profile:
+            self.colour = await database_sync_to_async(lambda: getattr(profile, "colour_preference", get_default_colour()))()
+            self.diameter = await database_sync_to_async(lambda: getattr(profile, "diameter_preference", get_default_diameter()))()
+        else:
+            self.colour = get_default_colour()
+            self.diameter = get_default_diameter()
+
+
 
         # Join Channels group
         await self.channel_layer.group_add(
@@ -165,19 +186,39 @@ class GameConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
 
         # ============================================================
+        # SECURITY: ignore client-provided colour/diameter
+        # ============================================================
+        colour = self.colour
+        diameter = self.diameter
+
+        # ============================================================
         # 1. Stroke (drawing or click-dot)
         # ============================================================
         if "stroke" in data or data.get("draw"):
             if "stroke" in data:
-                stroke = data["stroke"]
+                raw = data["stroke"]
+
+                # SECURITY: sanitize stroke
+                try:
+                    stroke = {
+                        "x1": int(raw.get("x1", 0)),
+                        "y1": int(raw.get("y1", 0)),
+                        "x2": int(raw.get("x2", 0)),
+                        "y2": int(raw.get("y2", 0)),
+                        "colour": colour,
+                        "diameter": diameter
+                    }
+                except (KeyError, TypeError, ValueError):
+                    return
+
             else:
                 stroke = {
-                    "x1": data["x"],
-                    "y1": data["y"],
-                    "x2": data["x"],
-                    "y2": data["y"],
-                    "colour": data.get("colour", get_default_colour()),
-                    "diameter": data.get("diameter", 10)
+                    "x1": int(data.get("x", 0)),
+                    "y1": int(data.get("y", 0)),
+                    "x2": int(data.get("x", 0)),
+                    "y2": int(data.get("y", 0)),
+                    "colour": colour,
+                    "diameter": diameter
                 }
 
             # Store persistent stroke
@@ -199,19 +240,25 @@ class GameConsumer(AsyncWebsocketConsumer):
         # 2. Movement
         # ============================================================
         if "x" in data and "y" in data:
+            try:
+                x = int(data["x"])
+                y = int(data["y"])
+            except (KeyError, TypeError, ValueError):
+                return
+
             await safe_redis(redis_client.hset(
                 f"positions:{self.room_id}",
                 self.id,
-                f"{data['x']},{data['y']},{data.get('colour', get_default_colour())}"
+                f"{x},{y},{colour}"
             ))
 
             await safe_redis(redis_client.xadd(
                 self.stream,
                 {
                     "id": self.id,
-                    "x": data["x"],
-                    "y": data["y"],
-                    "colour": data.get("colour", get_default_colour())
+                    "x": x,
+                    "y": y,
+                    "colour": colour
                 },
                 maxlen=1000,
                 approximate=True
