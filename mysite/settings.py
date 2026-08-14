@@ -24,11 +24,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()  # loads .env from project root
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
+# MinIO / S3 variables
+
+DEFAULT_FILE_STORAGE = "whiteboard.storage.WhiteboardStorage"
+
+AWS_ACCESS_KEY_ID = os.environ.get("MINIO_ROOT_USER")
+AWS_SECRET_ACCESS_KEY = os.environ.get("MINIO_ROOT_PASSWORD")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("BUCKET_NAME")
+
+AWS_S3_ENDPOINT_URL = "http://localhost:9000"
+AWS_S3_REGION_NAME = "us-east-1"   # required by boto3, MinIO ignores it
+
+AWS_S3_USE_SSL = False
+AWS_S3_VERIFY = False
+
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG")
 
 # ALLOWED_HOSTS = ["192.168.1.152", "localhost"]
-ALLOWED_HOSTS = ["*"]
+if os.environ.get("ALLOWED_HOSTS") == "*":
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition
@@ -44,6 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'rooms.apps.RoomsConfig',
+    "storages",
 ]
 
 ASGI_APPLICATION = "mysite.asgi.application"

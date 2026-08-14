@@ -1,8 +1,8 @@
 # ============================
 # Django + Python
 # ============================
-__pycache__/
-*.py[cod]
+**/__pycache__/
+*.pyc
 *.pyo
 *.pyd
 *.so
@@ -58,3 +58,8 @@ Thumbs.db
 # Ignore Docker volumes and build artifacts
 docker-data/
 docker-volumes/
+
+# ============================
+# MinIO
+# ============================
+minio-data/
