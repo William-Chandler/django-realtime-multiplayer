@@ -25,6 +25,7 @@ urlpatterns = [
     path("", index, name="home"),
     path('accounts/', include('accounts.urls')),
     path("rooms/", include("rooms.urls")),
+    path("whiteboards/", include("whiteboards.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
