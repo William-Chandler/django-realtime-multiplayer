@@ -46,7 +46,6 @@ socket.onopen = () => {
 
     // Create local player instantly
     players["local"] = {
-        x: 0, y: 0,
         tx: 0, ty: 0,
         ix: 0, iy: 0,
         colour: COLOUR,
@@ -97,13 +96,6 @@ socket.onmessage = (e) => {
                 diameter: data.diameter || USER_DIAMETER
             };
         } else {
-            if (p.tx === undefined) p.tx = p.x;
-            if (p.ty === undefined) p.ty = p.y;
-            if (p.ix === undefined) p.ix = p.x;
-            if (p.iy === undefined) p.iy = p.y;
-
-            p.x = p.tx;
-            p.y = p.ty;
             p.tx = data.x;
             p.ty = data.y;
 

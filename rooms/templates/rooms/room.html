@@ -12,16 +12,44 @@
 	
 	{% include "core/header.html" with next_url=request.path %}
 	
-	<!-- Debug banner --!>
+	<!-- Debug banner -->
 	<div style="background:#222; color:#fff; padding:8px; margin-bottom:10px;">
 		<span>Active Room: </span>
 		<strong>{{ room.room_id }}</strong>
 	</div>
 	
-	<!-- For debugging --!>
+	<!-- For debugging -->
 	<script>
 		window.SERVER_ROOM_ID = "{{ room.room_id }}";
 	</script>
+	
+	<!-- Save / Load whiteboards controls -->
+	<div id="whiteboard-controls">
+		<button id="save-board-btn">Save Whiteboard</button>
+
+		{% if request.user == room.owner %}
+		<select id="load-board-dropdown">
+			<option value="">Load Saved Board...</option>
+		</select>
+		{% endif %}
+		
+		{% load static %}
+
+		<script type="module">
+			const ROOM_ID = "{{ room.room_id }}";
+			const CSRF_TOKEN = "{{ csrf_token }}";
+
+			{% if request.user == room.owner %}
+				const IS_OWNER = true;
+			{% else %}
+				const IS_OWNER = false;
+			{% endif %}
+			
+			import { initWhiteboardControls } from "{% static 'core/whiteboard_save_load.js' %}";
+			initWhiteboardControls(ROOM_ID, CSRF_TOKEN, IS_OWNER);
+		</script>
+	</div>
+
 
 	<div id="canvas-container">
 		{% load static %}

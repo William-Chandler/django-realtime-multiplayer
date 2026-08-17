@@ -6,6 +6,7 @@ from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
 from mysite.redis import redis_client
 from django.conf import settings
+from whiteboards.state import load_state_from_s3
 
 
 # ============================================================
@@ -43,6 +44,7 @@ async def room_stream_reader(room_id):
     Single reader per room per worker.
     Reads Redis stream and broadcasts via Channels group.
     """
+    print("READER for room_id", room_id)
     channel_layer = get_channel_layer()
     stream = f"game:room:{room_id}"
     last_id = "$"
@@ -119,6 +121,25 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        # Store initial position
+        await safe_redis(redis_client.hset(
+            f"positions:{self.room_id}",
+            self.id,
+            f"0,0,{self.colour}"
+        ))
+
+        # Broadcast initial cursor to existing users
+        await self.channel_layer.group_send(
+            f"room_{self.room_id}",
+            {
+                "type": "cursor_move",
+                "id": self.id,
+                "x": 0,
+                "y": 0,
+                "colour": self.colour,
+            }
+        )
+
         # ============================================================
         # Send full stroke history
         # ============================================================
@@ -139,7 +160,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             redis_client.hgetall(f"positions:{self.room_id}"),
             {}
         )
-
+        
         for pid, pos in positions.items():
             try:
                 x, y, colour = pos.split(",")
@@ -153,6 +174,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 continue
 
     async def disconnect(self, close_code):
+        print("DISCONNECT:", self.room_id, self.id)
         # Remove position
         await safe_redis(redis_client.hdel(
             f"positions:{self.room_id}",
@@ -291,4 +313,25 @@ class GameConsumer(AsyncWebsocketConsumer):
             "x": fields["x"],
             "y": fields["y"],
             "colour": fields.get("colour", get_default_colour())
+        }))
+    
+    # ============================================================
+    # Called when the room owner loads a saved board.
+    # Broadcasts a full reload event to the client.
+    # ============================================================
+    async def room_reload(self, event):
+        strokes = event["strokes"]
+
+        await self.send(text_data=json.dumps({
+            "reload": True,
+            "strokes": strokes
+        }))
+        
+    async def cursor_move(self, event):
+        await self.send(text_data=json.dumps({
+            "id": event["id"],
+            "x": event["x"],
+            "y": event["y"],
+            "colour": event.get("colour"),
+            "diameter": event.get("diameter")
         }))
