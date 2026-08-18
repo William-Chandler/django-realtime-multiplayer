@@ -21,8 +21,19 @@ from .models import Room
 
 def create_room(request):
     if request.method == "POST":
-        room_id = request.POST["room_id"]
+        room_id = request.POST["room_id"].strip()
         password = request.POST["password"]
+
+        # Check if room already exists
+        if Room.objects.filter(room_id=room_id).exists():
+            return render(
+                request,
+                "rooms/create_room.html",
+                {
+                    "error": "A room with that name already exists.",
+                    "room_id": room_id
+                }
+            )
 
         room = Room(room_id=room_id, owner=request.user)
         room.set_password(password)

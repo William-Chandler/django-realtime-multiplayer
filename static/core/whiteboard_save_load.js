@@ -25,20 +25,63 @@ export function initWhiteboardControls(roomId, csrfToken, isOwner) {
 // Ssave board
 // ---------------------------
 async function saveBoard() {
-    const response = await fetch(`/rooms/${ROOM_ID}/save/`, {
+    const statusEl = document.getElementById("save-status");
+
+    // Clear previous message
+    statusEl.textContent = "";
+    statusEl.style.color = "";
+
+    const nameInput = document.getElementById("board-name-input");
+    const boardName = nameInput ? nameInput.value.trim() : "";
+
+    if (!boardName) {
+        statusEl.style.color = "red";
+        statusEl.textContent = "Please enter a name for your whiteboard before saving.";
+        setTimeout(() => statusEl.textContent = "", 3000);
+        return;
+    }
+
+    // First attempt: check if board exists
+    let response = await fetch(`/rooms/${ROOM_ID}/save/`, {
         method: "POST",
-        headers: { "X-CSRFToken": CSRF_TOKEN }
+        headers: {
+            "X-CSRFToken": CSRF_TOKEN,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: boardName })
     });
 
-    const data = await response.json();
-    alert("Whiteboard saved!");
+    let data = await response.json();
 
-    // Refresh dropdown if owner
+    if (data.exists) {
+        const ok = confirm(`A board named "${boardName}" already exists. Overwrite it?`);
+        if (!ok) return;
+
+        // Second request: overwrite
+        response = await fetch(`/rooms/${ROOM_ID}/save/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": CSRF_TOKEN,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: boardName, overwrite: true })
+        });
+
+        data = await response.json();
+    }
+
+    // Success message
+    statusEl.style.color = "green";
+    statusEl.textContent = "Whiteboard saved!";
+    setTimeout(() => statusEl.textContent = "", 3000);
+
     const dropdown = document.getElementById("load-board-dropdown");
     if (dropdown) {
         loadBoardsIntoDropdown();
     }
 }
+
+
 
 // ---------------------------
 // Load board
