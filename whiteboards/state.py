@@ -26,10 +26,12 @@ def s3_key_for_room_state(room_id):
 def s3_key_for_user_board(user_id, board_uuid):
     return f"users/{user_id}/boards/{board_uuid}.json"
 
+# Use this for user-saved boards
 def save_board_to_s3(s3_key, strokes):
     payload = json.dumps({"strokes": strokes})
     storage.save(s3_key, ContentFile(payload.encode("utf-8")))
 
+# ONLY for autosave functionality
 def save_state_to_s3(room_id, strokes):
     payload = json.dumps({"strokes": strokes})
     key = s3_key_for_room_state(room_id)

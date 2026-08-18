@@ -25,6 +25,13 @@
 	
 	<!-- Save / Load whiteboards controls -->
 	<div id="whiteboard-controls">
+		<input 
+			id="board-name-input" 
+			type="text" 
+			placeholder="Whiteboard name..."
+			style="margin-right:10px;"
+		>
+		
 		<button id="save-board-btn">Save Whiteboard</button>
 
 		{% if request.user == room.owner %}
@@ -32,6 +39,10 @@
 			<option value="">Load Saved Board...</option>
 		</select>
 		{% endif %}
+		
+		<span id="save-status" style="margin-top: 10px;"></span>
+
+		
 		
 		{% load static %}
 
@@ -45,9 +56,10 @@
 				const IS_OWNER = false;
 			{% endif %}
 			
-			import { initWhiteboardControls } from "{% static 'core/whiteboard_save_load.js' %}";
+			import { initWhiteboardControls } from "{% static 'core/whiteboard_save_load.js' %}?v=4";
 			initWhiteboardControls(ROOM_ID, CSRF_TOKEN, IS_OWNER);
 		</script>
+		<p> </p>
 	</div>
 
 
