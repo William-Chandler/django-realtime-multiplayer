@@ -1,12 +1,27 @@
 import json
 import uuid
 import asyncio
+import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
 from mysite.redis import redis_client
 from django.conf import settings
 from whiteboards.state import load_state_from_s3
+from mysite.cleanup import room_cleanup_loop
+
+# ============================================================
+# Start cleanup process
+# ============================================================
+
+cleanup_started = False
+
+async def start_cleanup():
+    global cleanup_started
+    if not cleanup_started:
+        print("STARTING CLEANUP LOOP")
+        cleanup_started = True
+        asyncio.create_task(room_cleanup_loop())
 
 
 # ============================================================
@@ -14,8 +29,6 @@ from whiteboards.state import load_state_from_s3
 # ============================================================
 
 ROOM_READERS = {}      # room_id → asyncio.Task
-ROOM_CONNECTIONS = {}  # room_id → count of active connections
-
 
 def get_default_colour():
     return settings.DEFAULT_COLOUR
@@ -40,34 +53,37 @@ async def safe_redis(coro, fallback=None):
 # ============================================================
 
 async def room_stream_reader(room_id):
-    """
-    Single reader per room per worker.
-    Reads Redis stream and broadcasts via Channels group.
-    """
     print("READER for room_id", room_id)
     channel_layer = get_channel_layer()
     stream = f"game:room:{room_id}"
-    last_id = "$"
+    last_id = "0"  
 
     while True:
         try:
+            # NON-BLOCKING XREAD: no 'block' argument
             entries = await redis_client.xread(
-                streams={stream: last_id},
-                count=10,
-                block=0
+                {stream: last_id},
+                block=1000,
+                count=10
             )
-        except Exception:
+        except Exception as e:
+            print("XREAD ERROR:", e)
+            await asyncio.sleep(0.1)
             continue
 
+        print("ENTRIES:", entries)
+
         if not entries:
+            # nothing new, sleep briefly to avoid hammering Redis
+            await asyncio.sleep(0.1)
             continue
 
         _, messages = entries[0]
 
         for msg_id, fields in messages:
+            print("MSG:", msg_id, fields)
             last_id = msg_id
 
-            # Broadcast to group
             await channel_layer.group_send(
                 f"room_{room_id}",
                 {
@@ -84,15 +100,25 @@ async def room_stream_reader(room_id):
 class GameConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-
+        await start_cleanup()
+        
         self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.id = str(uuid.uuid4())
         self.stream = f"game:room:{self.room_id}"
 
-        # SERVER-SIDE identity (never trust browser)
-        user = self.scope["user"]
+        # Track room in Redis
+        await safe_redis(redis_client.sadd("rooms:active", self.room_id))
+        connections = await safe_redis(redis_client.incr(f"room:{self.room_id}:connections"))
 
-        # Fetch profile safely in async context
+        # Start reader if not already running in this worker
+        if self.room_id not in ROOM_READERS:
+            ROOM_READERS[self.room_id] = asyncio.create_task(
+                room_stream_reader(self.room_id)
+            )
+
+
+        # SERVER-SIDE identity
+        user = self.scope["user"]
         profile = await database_sync_to_async(lambda: getattr(user, "userprofile", None))()
 
         if profile:
@@ -102,22 +128,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.colour = get_default_colour()
             self.diameter = get_default_diameter()
 
-
-
         # Join Channels group
         await self.channel_layer.group_add(
             f"room_{self.room_id}",
             self.channel_name
         )
-
-        # Track active connections
-        ROOM_CONNECTIONS[self.room_id] = ROOM_CONNECTIONS.get(self.room_id, 0) + 1
-
-        # Start reader if needed
-        if ROOM_CONNECTIONS[self.room_id] == 1:
-            ROOM_READERS[self.room_id] = asyncio.create_task(
-                room_stream_reader(self.room_id)
-            )
 
         await self.accept()
 
@@ -128,7 +143,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             f"0,0,{self.colour}"
         ))
 
-        # Broadcast initial cursor to existing users
+        # Broadcast initial cursor
         await self.channel_layer.group_send(
             f"room_{self.room_id}",
             {
@@ -140,27 +155,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        # ============================================================
-        # Send full stroke history
-        # ============================================================
-        raw_strokes = await safe_redis(
-            redis_client.lrange(f"strokes:{self.room_id}", 0, -1),
-            []
-        )
+        # Send stroke history
+        raw_strokes = await safe_redis(redis_client.lrange(f"strokes:{self.room_id}", 0, -1), [])
         strokes = [json.loads(s) for s in raw_strokes]
 
-        await self.send(text_data=json.dumps({
-            "strokes": strokes
-        }))
+        await self.send(text_data=json.dumps({"strokes": strokes}))
 
-        # ============================================================
         # Send snapshot of existing players
-        # ============================================================
-        positions = await safe_redis(
-            redis_client.hgetall(f"positions:{self.room_id}"),
-            {}
-        )
-        
+        positions = await safe_redis(redis_client.hgetall(f"positions:{self.room_id}"), {})
         for pid, pos in positions.items():
             try:
                 x, y, colour = pos.split(",")
@@ -173,8 +175,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             except Exception:
                 continue
 
+
     async def disconnect(self, close_code):
         print("DISCONNECT:", self.room_id, self.id)
+
         # Remove position
         await safe_redis(redis_client.hdel(
             f"positions:{self.room_id}",
@@ -196,13 +200,27 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
         # Decrement connection count
-        ROOM_CONNECTIONS[self.room_id] -= 1
+        new_count = await safe_redis(
+            redis_client.decr(f"room:{self.room_id}:connections")
+        )
+        
+        # Clamp to 0
+        if new_count < 0:
+            new_count = 0
+            await redis_client.set(f"room:{self.room_id}:connections", 0)
+        
+        # If room is empty, mark timestamp + stop reader
+        if int(new_count) == 0:
+            print("SETTING LAST_EMPTY FOR", self.room_id)
+            await safe_redis(redis_client.set(
+                f"room:{self.room_id}:last_empty",
+                int(time.time())))
+            print("LAST_EMPTY SET, new_count = ", new_count)
 
-        # Stop reader if last connection left
-        if ROOM_CONNECTIONS[self.room_id] == 0:
             reader = ROOM_READERS.pop(self.room_id, None)
             if reader:
                 reader.cancel()
+
 
     async def receive(self, text_data):
         data = json.loads(text_data)

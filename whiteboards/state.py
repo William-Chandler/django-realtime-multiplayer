@@ -54,4 +54,16 @@ def load_board_from_s3(s3_key):
         data = json.load(f)
 
     return data.get("strokes", [])
+   
+# Delete the S3 room state file if it exists.   
+def delete_room_state_from_s3(room_id):
+    key = s3_key_for_room_state(room_id)
+
+    try:
+        if storage.exists(key):
+            storage.delete(key)
+    except Exception:
+        # Fail silently — cleanup should never crash the server
+        pass
+
 
