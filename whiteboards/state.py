@@ -6,15 +6,15 @@ from .storage import WhiteboardStorage
 from mysite.redis import get_redis_client
 
 async def get_room_strokes(room_id):
-    raw_strokes = await get_redis_client.lrange(f"strokes:{room_id}", 0, -1)
+    raw_strokes = await get_redis_client().lrange(f"strokes:{room_id}", 0, -1)
     return [json.loads(s) for s in raw_strokes]
 
 async def set_room_strokes(room_id, strokes):
     # Clear existing strokes
-    await get_redis_client.delete(f"strokes:{room_id}")
+    await get_redis_client().delete(f"strokes:{room_id}")
     if strokes:
         for s in strokes:
-            await get_redis_client.rpush(f"strokes:{room_id}", json.dumps(s))
+            await get_redis_client().rpush(f"strokes:{room_id}", json.dumps(s))
 
 # Room-level persistence
 def s3_key_for_room_state(room_id):
