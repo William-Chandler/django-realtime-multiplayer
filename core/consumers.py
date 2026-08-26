@@ -5,10 +5,12 @@ import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
-from mysite.redis import redis_client
+from mysite.redis import get_redis_client
 from django.conf import settings
 from whiteboards.state import load_state_from_s3
 from mysite.cleanup import room_cleanup_loop
+
+redis_client = get_redis_client()
 
 # ============================================================
 # Start cleanup process
@@ -71,7 +73,7 @@ async def room_stream_reader(room_id):
             await asyncio.sleep(0.1)
             continue
 
-        print("ENTRIES:", entries)
+        # print("ENTRIES:", entries)
 
         if not entries:
             # nothing new, sleep briefly to avoid hammering Redis
@@ -81,7 +83,7 @@ async def room_stream_reader(room_id):
         _, messages = entries[0]
 
         for msg_id, fields in messages:
-            print("MSG:", msg_id, fields)
+            # print("MSG:", msg_id, fields)
             last_id = msg_id
 
             await channel_layer.group_send(
