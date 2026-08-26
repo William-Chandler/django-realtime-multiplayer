@@ -6,3 +6,8 @@ python-dotenv
 psycopg2-binary
 django-storages==1.14.2
 boto3==1.34.0
+
+# Unit Testing
+pytest
+pytest-asyncio
+pytest-django

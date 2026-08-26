@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST, require_GET
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
-from mysite.redis import redis_client
+from mysite.redis import get_redis_client
 from whiteboards.state import (
     get_room_strokes,
     set_room_strokes,
