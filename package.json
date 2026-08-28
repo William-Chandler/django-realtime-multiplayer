@@ -1,0 +1,28 @@
+{
+  "name": "django_project_multiplayer",
+  "version": "1.0.0",
+  "description": "A fully containerised Django Channels starter kit for building realtime multiplayer applications. This project uses Django, Channels, Daphne, Redis, and Docker to provide a robust foundation for realtime communication over WebSockets.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/William-Chandler/django-realtime-multiplayer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/William-Chandler/django-realtime-multiplayer/issues"
+  },
+  "homepage": "https://github.com/William-Chandler/django-realtime-multiplayer#readme",
+  "devDependencies": {
+    "jest": "^30.5.0",
+    "jest-environment-jsdom": "^30.5.0"
+  }
+}
