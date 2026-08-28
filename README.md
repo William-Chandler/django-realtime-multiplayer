@@ -1,4 +1,4 @@
-# OUTDATED -- NEEDS UPDATING
+# README IS OUTDATED -- NEEDS UPDATING
 # Django Realtime Multiplayer
 
 A fully containerised Django Channels starter kit for building realtime multiplayer applications.
