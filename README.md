@@ -1,9 +1,10 @@
+# OUTDATED -- NEEDS UPDATING
 # Django Realtime Multiplayer
 
 A fully containerised Django Channels starter kit for building realtime multiplayer applications.
 This project uses Django, Channels, Daphne, Redis, and Docker to provide a robust foundation for realtime communication over WebSockets.
 
-# Features
+# Features 
 
 - Realtime communication using Django Channels
 
