@@ -8,7 +8,7 @@ urlpatterns = [
     path("<room_id>/", views.room_page, name="room_page"),
 
     # New API endpoints
-    path("<room_id>/save/", wb_views.save_whiteboard),
+    path("<room_id>/save/", wb_views.save_whiteboard, name="save_whiteboard"),
     path("<room_id>/load/", views.load_room_state, name="load_room_state"),
     path("<room_id>/load_board/<int:board_id>/", views.load_user_board_into_room),
 ]

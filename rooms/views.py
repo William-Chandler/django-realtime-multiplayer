@@ -114,7 +114,7 @@ def load_room_state(request, room_id):
     try:
         room = Room.objects.get(room_id=room_id)
     except Room.DoesNotExist:
-        return HttpResponseForbidden("Room not found")
+        return HttpResponseForbidden("Room not found.")
 
     # Only owner may load
     if room.owner != request.user:

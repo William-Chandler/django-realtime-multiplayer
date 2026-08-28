@@ -1,5 +1,6 @@
 <p>{% include "core/header.html" with next_url=request.get_full_path %}</p>
 <h2>Join an existing room</h2>
+
 <form method="POST">
     {% csrf_token %}
     <label>Room Name:</label>
@@ -9,4 +10,7 @@
     <input type="password" name="password" required>
 
     <button type="submit">Join Room</button>
+	{% if error %}
+		<p style="color:red;">{{ error }}</p>
+	{% endif %}
 </form>
