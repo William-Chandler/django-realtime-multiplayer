@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from core.consumers import GameConsumer, ROOM_READERS
+from core.consumers import GameConsumer
 
 
 @pytest.mark.asyncio
@@ -12,30 +12,28 @@ async def test_disconnect_cleans_up_and_cancels_reader():
         "user": MagicMock(),
     }
 
-    # Instantiate consumer correctly
     consumer = GameConsumer()
     consumer.scope = scope
     consumer.room_id = "room123"
     consumer.id = "abc"
     consumer.stream = "game:room:room123"
+    consumer.channel_name = "test-channel"
+
+    # Fake reader task stored on the consumer instance
+    fake_task = MagicMock()
+    consumer.reader_task = fake_task
 
     # Fake channel layer
     consumer.channel_layer = MagicMock()
-    consumer.channel_layer.group_add = AsyncMock()
     consumer.channel_layer.group_discard = AsyncMock()
-    consumer.channel_layer.group_send = AsyncMock()
-    consumer.channel_name = "test-channel"
 
     # Fake Redis client
     fake_redis = AsyncMock()
+    fake_redis.delete = AsyncMock()
     fake_redis.hdel = AsyncMock()
     fake_redis.xadd = AsyncMock()
     fake_redis.decr = AsyncMock(return_value=0)
     fake_redis.set = AsyncMock()
-
-    # Fake reader task
-    fake_task = MagicMock()
-    ROOM_READERS["room123"] = fake_task
 
     with patch("core.consumers.redis_client", fake_redis), \
          patch("core.consumers.time.time", return_value=123456789):
@@ -43,8 +41,9 @@ async def test_disconnect_cleans_up_and_cancels_reader():
         await consumer.disconnect(close_code=1000)
 
     # Redis cleanup
+    fake_redis.delete.assert_any_await("player:abc:connected")
     fake_redis.hdel.assert_awaited_with("positions:room123", "abc")
-    fake_redis.xadd.assert_awaited()  # disconnect broadcast
+    fake_redis.xadd.assert_awaited()
     fake_redis.decr.assert_awaited_with("room:room123:connections")
     fake_redis.set.assert_awaited_with("room:room123:last_empty", 123456789)
 
@@ -54,8 +53,8 @@ async def test_disconnect_cleans_up_and_cancels_reader():
         "test-channel",
     )
 
-    # Reader cancellation
+    # Reader cancellation (new logic: cancel only if consumer.reader_task exists)
     fake_task.cancel.assert_called_once()
 
-    # Reader removed from registry
-    assert "room123" not in ROOM_READERS
+    # Redis reader lock cleared
+    fake_redis.delete.assert_any_await("room:room123:reader_running")
