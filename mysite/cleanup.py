@@ -1,9 +1,9 @@
 import asyncio
 import time
 from mysite.redis import get_redis_client
-from rooms.services import delete_room
 
 async def room_cleanup_loop():
+    from rooms.services import delete_room
     redis = get_redis_client()
     while True:
         now = int(time.time())

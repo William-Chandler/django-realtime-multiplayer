@@ -7,7 +7,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
 from mysite.redis import get_redis_client
-from mysite.cleanup import room_cleanup_loop
 from django.conf import settings
 from whiteboards.state import load_state_from_s3
 
@@ -21,6 +20,7 @@ ROOM_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 cleanup_started = False
 
 async def start_cleanup():
+    from mysite.cleanup import room_cleanup_loop
     global cleanup_started
     if not cleanup_started:
         print("STARTING CLEANUP LOOP")
