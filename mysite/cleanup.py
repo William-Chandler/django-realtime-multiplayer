@@ -1,36 +1,49 @@
 import asyncio
 import time
 from mysite.redis import get_redis_client
+from rooms.services import delete_room
+import redis.exceptions
 
 async def room_cleanup_loop():
-    from rooms.services import delete_room
     redis = get_redis_client()
+    print("CLEANUP LOOP STARTED")
+
     while True:
-        now = int(time.time())
+        try:
+            # Safe read of active rooms
+            room_ids = await safe_redis(redis.smembers("rooms:active"), [])
+            now = int(time.time())
 
-        # get all rooms we’re tracking
-        room_ids = await redis.smembers("rooms:active")
-
-        for room_id in room_ids:
-            # connections
-            connections = await redis.get(f"room:{room_id}:connections")
-            if connections is None or int(connections) > 0:
-                continue
-
-            # last empty time
-            last_empty = await redis.get(f"room:{room_id}:last_empty")
-            if last_empty is None:
-                continue
-
-            # inactive for > 60 seconds
-            if now - int(last_empty) > 60:
-                await delete_room(room_id)
-
-                # cleanup Redis keys
-                await redis.delete(
-                    f"room:{room_id}:connections",
-                    f"room:{room_id}:last_empty",
+            for room_id in room_ids:
+                # Safe read of connection count
+                connections = await safe_redis(
+                    redis.get(f"room:{room_id}:connections"),
+                    None
                 )
-                await redis.srem("rooms:active", room_id)
 
-        await asyncio.sleep(5)
+                if connections is None:
+                    continue
+
+                try:
+                    if int(connections) > 0:
+                        continue
+                except:
+                    continue
+
+                # Safe read of last_empty timestamp
+                last_empty = await safe_redis(
+                    redis.get(f"room:{room_id}:last_empty"),
+                    None
+                )
+
+                if last_empty is None:
+                    continue
+
+                try:
+                    last_empty = int(last_empty)
+                except:
+                    continue
+
+                # Room inactive long enough → delete
+                if now - last_empty > 60:
+                    print(f"CLEANING

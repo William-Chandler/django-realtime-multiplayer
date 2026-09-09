@@ -3,12 +3,14 @@ import uuid
 import asyncio
 import time
 import re
+import redis.exceptions
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
 from mysite.redis import get_redis_client
 from django.conf import settings
 from whiteboards.state import load_state_from_s3
+
 
 redis_client = get_redis_client()
 ROOM_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
@@ -33,16 +35,25 @@ def get_default_colour():
 def get_default_diameter():
     return getattr(settings, "DEFAULT_DIAMETER", 10)
 
-
 async def safe_redis(coro, fallback=None):
     try:
         return await coro
+
+    except (redis.exceptions.TimeoutError, asyncio.TimeoutError):
+        # Redis was slow or idle — treat as "no result"
+        return fallback
+
+    except redis.exceptions.ConnectionError:
+        # Redis down — also treat as "no result"
+        return fallback
+
     except Exception as e:
-        # Log redis errors
+        # Log unexpected errors
         import logging
         logger = logging.getLogger("redis")
         logger.error(f"Redis error: {type(e).__name__}: {e}", exc_info=True)
         return fallback
+
 
 
 # ============================================================
