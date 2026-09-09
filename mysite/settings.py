@@ -86,17 +86,6 @@ INSTALLED_APPS = [
 
 ASGI_APPLICATION = "mysite.asgi.application"
 
-# For Redis upon AWS deployment
-
-# CHANNEL_LAYERS = {
-    # "default": {
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # "CONFIG": {
-            # "hosts": [("redis", 6379)],
-        # },
-    # },
-# }
-
 ## Dev:
 # CHANNEL_LAYERS = {
     # "default": {
@@ -109,7 +98,12 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [{
+                "address": ("redis", 6379),
+                "socket_timeout": None,         
+                "socket_connect_timeout": 5,
+                "retry_on_timeout": True,
+            }],
         },
     },
 }
