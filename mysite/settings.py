@@ -51,7 +51,11 @@ DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
     # ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 ## Prod:    
-ALLOWED_HOSTS = ["13.63.44.183", "localhost"]
+ALLOWED_HOSTS = [
+    "13.63.44.183", 
+    "localhost",
+    "127.0.0.1",
+]
 
 ## Later, when a domain is added:
 #ALLOWED_HOSTS = ["whiteboard.example.com", "13.63.44.183"]
