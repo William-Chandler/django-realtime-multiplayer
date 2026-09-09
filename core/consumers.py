@@ -302,6 +302,11 @@ class GameConsumer(AsyncWebsocketConsumer):
 
 
     async def receive(self, text_data):
+        # Heartbeat
+        if text_data == "ping":
+            await self.send("pong")
+            return
+            
         # Prevent malicious clients sending huge payloads
         if len(text_data) > 4096:
             return

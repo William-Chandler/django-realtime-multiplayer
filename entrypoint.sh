@@ -1,6 +1,20 @@
 #!/bin/sh
+set -e
 
+# Ensure static root exists
+mkdir -p /app/staticfiles
+
+echo "Running migrations..."
+python manage.py migrate --noinput
+
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
+
+# Purge logic runs in both dev and prod
+if [ "$RUN_PURGE_ON_STARTUP" = "true" ]; then
+    echo "Purging old rooms..."
+    python manage.py purge_old_rooms
+fi
 
 if [ "$DJANGO_ENV" = "production" ]; then
     echo "Starting Daphne (production mode)..."

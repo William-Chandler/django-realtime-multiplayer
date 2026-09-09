@@ -41,16 +41,29 @@ AWS_S3_USE_SSL = False
 AWS_S3_VERIFY = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG")
+DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
 
+## Dev (either or):
 # ALLOWED_HOSTS = ["192.168.1.152", "localhost"]
-if os.environ.get("ALLOWED_HOSTS") == "*":
-    ALLOWED_HOSTS = ["*"]
-else:
-    ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+# if os.environ.get("ALLOWED_HOSTS") == "*":
+    # ALLOWED_HOSTS = ["*"]
+# else:
+    # ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+## Prod:    
+ALLOWED_HOSTS = ["13.63.44.183", "localhost"]
+
+## Later, when a domain is added:
+#ALLOWED_HOSTS = ["whiteboard.example.com", "13.63.44.183"]
 
 
 # Application definition
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://13.63.44.183",
+    "https://13.63.44.183",
+    "https://whiteboard.example.com"
+]
 
 INSTALLED_APPS = [
     "daphne",
@@ -80,13 +93,22 @@ ASGI_APPLICATION = "mysite.asgi.application"
     # },
 # }
 
-# For dev purposes
+## Dev:
+# CHANNEL_LAYERS = {
+    # "default": {
+        # "BACKEND": "channels.layers.InMemoryChannelLayer",
+    # }
+# }
+
+## Prod:
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-    }
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -103,7 +125,6 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],
         'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -173,7 +194,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = "/static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default brush colour
 DEFAULT_COLOUR = "white"
