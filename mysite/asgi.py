@@ -5,7 +5,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 import core.routing
 from django.core.asgi import get_asgi_application
-from rooms.services import purge_all_rooms
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
 
@@ -17,6 +17,8 @@ async def lifespan(scope, receive, send):
         # Startup
         if os.environ.get("RUN_PURGE_ON_STARTUP") == "true":
             print("🔥 ASGI lifespan: starting purge_all_rooms()")
+            
+            from rooms.services import purge_all_rooms
             asyncio.create_task(purge_all_rooms())
 
         # Tell server startup is complete
