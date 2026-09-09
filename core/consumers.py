@@ -53,52 +53,53 @@ async def room_stream_reader(room_id):
     print("READER for room_id", room_id)
     channel_layer = get_channel_layer()
     stream = f"game:room:{room_id}"
-
-    # Start from new messages only
     last_id = "0"
 
     try:
         while True:
             try:
+                # Wait up to 5 seconds for new messages
                 entries = await redis_client.xread(
                     {stream: last_id},
-                    block=1000,
+                    block=5000,   # milliseconds
                     count=10
                 )
+
+                # No messages → normal idle period
+                if not entries:
+                    continue
+
+                _, messages = entries[0]
+
+                for msg_id, fields in messages:
+                    last_id = msg_id
+
+                    if not isinstance(fields, dict):
+                        continue
+
+                    await channel_layer.group_send(
+                        f"room_{room_id}",
+                        {
+                            "type": "room.event",
+                            "fields": fields
+                        }
+                    )
+
             except asyncio.CancelledError:
-                # Reader was cancelled intentionally
                 print("READER CANCELLED:", room_id)
                 break
+
+            except (asyncio.TimeoutError, redis.exceptions.TimeoutError):
+                # Redis was idle — this is normal
+                continue
+
             except Exception as e:
-                print("XREAD ERROR:", e)
+                print(f"XREAD ERROR in room {room_id}: {e}")
                 await asyncio.sleep(0.1)
                 continue
 
-            if not entries:
-                await asyncio.sleep(0.05)
-                continue
-
-            _, messages = entries[0]
-
-            for msg_id, fields in messages:
-                last_id = msg_id
-
-                # SECURITY: validate fields
-                if not isinstance(fields, dict):
-                    continue
-
-                await channel_layer.group_send(
-                    f"room_{room_id}",
-                    {
-                        "type": "room.event",
-                        "fields": fields
-                    }
-                )
-
     finally:
         print("READER EXITING CLEANLY:", room_id)
-
-
 
 # ============================================================
 # WebSocket Consumer

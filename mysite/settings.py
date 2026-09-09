@@ -141,9 +141,7 @@ TEMPLATES = [
     },
 ]
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
@@ -199,6 +197,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default brush colour
 DEFAULT_COLOUR = "white"
